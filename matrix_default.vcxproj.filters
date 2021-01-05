@@ -13,45 +13,10 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Pliki źródłowe\MyAlgebra">
-      <UniqueIdentifier>{de5a6274-9dc5-4d8b-9bab-58fc8b8707f0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Pliki nagłówkowe\MyAlgebra">
-      <UniqueIdentifier>{7b6b0010-fb14-4748-9070-419a149d90d8}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="matrix_default.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="MyAlgebra\CMtx.cpp">
-      <Filter>Pliki źródłowe\MyAlgebra</Filter>
-    </ClCompile>
-    <ClCompile Include="RefAlgebra\CMtxRef.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
-    <ClCompile Include="RefAlgebra\CVctRef.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
-    <ClCompile Include="MyAlgebra\CVct.cpp">
-      <Filter>Pliki źródłowe</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CAlgError.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="MyAlgebra\CMtx.h">
-      <Filter>Pliki nagłówkowe\MyAlgebra</Filter>
-    </ClInclude>
-    <ClInclude Include="MyAlgebra\CVct.h">
-      <Filter>Pliki nagłówkowe\MyAlgebra</Filter>
-    </ClInclude>
-    <ClInclude Include="RefAlgebra\CMtxRef.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
-    <ClInclude Include="RefAlgebra\CVctRef.h">
-      <Filter>Pliki nagłówkowe</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

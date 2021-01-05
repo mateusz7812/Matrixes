@@ -1,44 +1,40 @@
-#include "CMtxRef.h"
+#include "CMtx.h"
+
 
 #include <sstream>
 #include <cmath>
-#include "../CAlgError.h"
-#include "CVctRef.h"
-#include <xpolymorphic_allocator.h>
 
-namespace RefAlgebra
+#include "CAlgError.h"
+
+namespace MyAlgebra2
 {
-	const FPTYPE CMtxRef::ALG_PRECISION = 0.1f;
+	const float CMtx::ALG_PRECISION = 0.1f;
 
-	CMtxRef::CMtxRef(): CMtxRef(0, 0, false)
-	{
-	}
-
-	CMtxRef::CMtxRef(int row_cnt, int col_cnt, bool rand_init)
+	CMtx::CMtx(int row_cnt, int col_cnt, bool rand_init)
 	{
 		this->row_cnt = row_cnt;
 		this->col_cnt = col_cnt;
 		row_ptr = create_matrix(row_cnt, col_cnt, rand_init);
 	}
 
-	CMtxRef::CMtxRef(int row_cnt, FPTYPE diagonal)
+	CMtx::CMtx(int row_cnt, float diagonal)
 	{
 		this->row_cnt = row_cnt;
 		this->col_cnt = row_cnt;
 		row_ptr = create_matrix(row_cnt, col_cnt, diagonal);
 	}
 
-	CMtxRef::CMtxRef(const CMtxRef& rhs)
+	CMtx::CMtx(const CMtx& rhs)
 	{
 		copy(rhs);
 	}
 
-	CMtxRef::CMtxRef(CMtxRef&& rhs)
+	CMtx::CMtx(CMtx&& rhs)
 	{
 		move(rhs);
 	}
 
-	CMtxRef::~CMtxRef()
+	CMtx::~CMtx()
 	{
 		if (row_ptr != NULL)
 		{
@@ -50,25 +46,25 @@ namespace RefAlgebra
 		}
 	}
 
-	const CMtxRef& CMtxRef::operator=(const FPTYPE diagonal)
+	const CMtx& CMtx::operator=(const float diagonal)
 	{
 		make_diagonal(row_cnt, col_cnt, diagonal, row_ptr);
 		return *this;
 	}
 
-	FPTYPE** CMtxRef::create_matrix(int row_cnt, int col_cnt)
+	float** CMtx::create_matrix(int row_cnt, int col_cnt)
 	{
-		FPTYPE** ptr = new FPTYPE*[row_cnt];
+		float** ptr = new float*[row_cnt];
 		for (int i = 0; i < row_cnt; i++)
 		{
-			ptr[i] = new FPTYPE[col_cnt];
+			ptr[i] = new float[col_cnt];
 		}
 		return ptr;
 	}
 
-	FPTYPE** CMtxRef::create_matrix(int row_cnt, int col_cnt, bool rand_init)
+	float** CMtx::create_matrix(int row_cnt, int col_cnt, bool rand_init)
 	{
-		FPTYPE** ptr = create_matrix(row_cnt, col_cnt);
+		float** ptr = create_matrix(row_cnt, col_cnt);
 		if (rand_init)
 		{
 			for (int i = 0; i < row_cnt; i++)
@@ -78,7 +74,7 @@ namespace RefAlgebra
 		return ptr;
 	}
 
-	void CMtxRef::make_diagonal(int row_cnt, int col_cnt, FPTYPE diagonal, FPTYPE** ptr)
+	void CMtx::make_diagonal(int row_cnt, int col_cnt, float diagonal, float** ptr)
 	{
 		for (int i = 0; i < row_cnt; i++)
 			for (int j = 0; j < col_cnt; j++)
@@ -90,14 +86,14 @@ namespace RefAlgebra
 			}
 	}
 
-	FPTYPE** CMtxRef::create_matrix(int row_cnt, int col_cnt, FPTYPE diagonal)
+	float** CMtx::create_matrix(int row_cnt, int col_cnt, float diagonal)
 	{
-		FPTYPE** ptr = create_matrix(row_cnt, col_cnt);
+		float** ptr = create_matrix(row_cnt, col_cnt);
 		make_diagonal(row_cnt, col_cnt, diagonal, ptr);
 		return ptr;
 	}
 
-	std::string CMtxRef::to_string()
+	std::string CMtx::to_string()
 	{
 		std::stringstream stream;
 		stream.precision(3);
@@ -112,28 +108,28 @@ namespace RefAlgebra
 		return stream.str();
 	}
 
-	void CMtxRef::change_rows(int first, int second)
+	void CMtx::change_rows(int first, int second)
 	{
-		FPTYPE* saved = matrix[first];
+		float* saved = matrix[first];
 		matrix[first] = matrix[second];
 		matrix[second] = saved;
 	}
 
-	CMtxRef operator*(FPTYPE multiplier, const CMtxRef& rhs)
+	CMtx operator*(float multiplier, const CMtx& rhs)
 	{
-		CMtxRef result(rhs.row_cnt, rhs.col_cnt, false);
+		CMtx result(rhs.row_cnt, rhs.col_cnt, false);
 		for (int i = 0; i < rhs.row_cnt; i++)
 			for (int j = 0; j < rhs.col_cnt; j++)
 				result[i][j] = multiplier * rhs[i][j];
 		return result;
 	}
 
-	CMtxRef** create_sub_matrixes_for_determinant(const CMtxRef& rhs, const int size)
+	CMtx** create_sub_matrixes_for_determinant(const CMtx& rhs, const int size)
 	{
-		CMtxRef** matrixes = new CMtxRef*[size];
+		CMtx** matrixes = new CMtx*[size];
 
 		for (int i = 0; i < size; i++)
-			matrixes[i] = new CMtxRef(size - 1, size - 1, false);
+			matrixes[i] = new CMtx(size - 1, size - 1, false);
 
 		for (int i = 0; i < size - 1; i++)
 		{
@@ -155,13 +151,13 @@ namespace RefAlgebra
 		return matrixes;
 	}
 
-	float det(const CMtxRef& rhs)
+	float det(const CMtx& rhs)
 	{
 		if (rhs.row_cnt != rhs.col_cnt) throw BAD_SIZE_EXCEPTION();
 		const int size = rhs.row_cnt;
 		if (size == 0) return 1.0f;
 
-		CMtxRef** matrixes = create_sub_matrixes_for_determinant(rhs, size);
+		CMtx** matrixes = create_sub_matrixes_for_determinant(rhs, size);
 
 		float result = 0;
 		int sign = 1;
@@ -174,7 +170,7 @@ namespace RefAlgebra
 		return result;
 	}
 
-	void CMtxRef::move(CMtxRef& rhs)
+	void CMtx::move(CMtx& rhs)
 	{
 		row_cnt = rhs.row_cnt;
 		col_cnt = rhs.col_cnt;
@@ -182,7 +178,7 @@ namespace RefAlgebra
 		rhs.row_ptr = create_matrix(row_cnt, col_cnt, false);
 	}
 
-	const CMtxRef& CMtxRef::operator=(CMtxRef&& rhs)
+	const CMtx& CMtx::operator=(CMtx&& rhs)
 	{
 		if (&rhs != this)
 		{
@@ -192,21 +188,16 @@ namespace RefAlgebra
 		return *this;
 	}
 
-	FPTYPE*& CMtxRef::operator[](int row_ind) const
+	float*& CMtx::operator[](int row_ind) const
 	{
 		return row_ptr[row_ind];
 	}
 
-	CVctRef CMtxRef::operator*(const CVctRef& rhs) const
-	{
-		return rhs;
-	}
-
-	CMtxRef CMtxRef::operator*(const CMtxRef& rhs) const
+	CMtx CMtx::operator*(const CMtx& rhs) const
 	{
 		if (rhs.row_cnt != col_cnt)
 			throw BAD_SIZE_EXCEPTION();
-		CMtxRef res(row_cnt, rhs.col_cnt, false);
+		CMtx res(row_cnt, rhs.col_cnt, false);
 		for (int i = 0; i < row_cnt; i++)
 		{
 			for (int j = 0; j < rhs.col_cnt; j++)
@@ -219,28 +210,28 @@ namespace RefAlgebra
 		return res;
 	}
 
-	CMtxRef CMtxRef::operator*(FPTYPE multiplier) const
+	CMtx CMtx::operator*(float multiplier) const
 	{
 		return multiplier * *this;
 	}
 
-	CMtxRef CMtxRef::map(const CMtxRef& rhs, FPTYPE fun(FPTYPE, FPTYPE)) const
+	CMtx CMtx::map(const CMtx& rhs, float fun(float, float)) const
 	{
-		CMtxRef result(col_cnt, row_cnt);
+		CMtx result(col_cnt, row_cnt);
 		for (int i = 0; i < row_cnt; i++)
 			for (int j = 0; j < col_cnt; j++)
 				result[i][j] = fun(row_ptr[i][j], rhs.row_ptr[i][j]);
 		return result;
 	}
 
-	void CMtxRef::copy(const CMtxRef& rhs)
+	void CMtx::copy(const CMtx& rhs)
 	{
 		row_cnt = rhs.row_cnt;
 		col_cnt = rhs.col_cnt;
-		row_ptr = new FPTYPE*[row_cnt];
+		row_ptr = new float*[row_cnt];
 		for (int i = 0; i < row_cnt; i++)
 		{
-			row_ptr[i] = new FPTYPE[col_cnt];
+			row_ptr[i] = new float[col_cnt];
 			for (int j = 0; j < col_cnt; j++)
 			{
 				row_ptr[i][j] = rhs.row_ptr[i][j];
@@ -248,47 +239,47 @@ namespace RefAlgebra
 		}
 	}
 
-	CMtxRef CMtxRef::operator+(const CMtxRef& rhs) const
+	CMtx CMtx::operator+(const CMtx& rhs) const
 	{
-		return map(rhs, [](FPTYPE first, FPTYPE second)
+		return map(rhs, [](float first, float second)
 		{
 			return first + second;
 		});
 	}
 
-	CMtxRef CMtxRef::operator-(const CMtxRef& rhs) const
+	CMtx CMtx::operator-(const CMtx& rhs) const
 	{
-		return map(rhs, [](FPTYPE first, FPTYPE second)
+		return map(rhs, [](float first, float second)
 		{
 			return first - second;
 		});
 	}
 
-	CMtxRef CMtxRef::operator-() const
+	CMtx CMtx::operator-() const
 	{
 		return -1 * *this;
 	}
 
-	CMtxRef CMtxRef::operator~() const
+	CMtx CMtx::operator~() const
 	{
-		CMtxRef result(col_cnt, row_cnt);
+		CMtx result(col_cnt, row_cnt);
 		for (int i = 0; i < row_cnt; i++)
 			for (int j = 0; j < col_cnt; j++)
 				result[j][i] = row_ptr[i][j];
 		return result;
 	}
 
-	CMtxRef CMtxRef::operator^(int power) const
+	CMtx CMtx::operator^(int power) const
 	{
 		if (power < -1) throw BAD_VALUE_EXCEPTION();
 		if (power == -1)
 			return reversed();
 		if (power == 0)
 		{
-			CMtxRef diagonal(row_cnt, 1.0f);
+			CMtx diagonal(row_cnt, 1.0f);
 			return diagonal;
 		}
-		CMtxRef result(*this);
+		CMtx result(*this);
 		for (int i = 1; i < power; i++)
 		{
 			result = std::move(result * *this);
@@ -296,18 +287,18 @@ namespace RefAlgebra
 		return result;
 	}
 
-	CMtxRef CMtxRef::reversed() const
+	CMtx CMtx::reversed() const
 	{
 		if (row_cnt != col_cnt) throw BAD_SIZE_EXCEPTION();
 		if (abs(det(*this)) < ALG_PRECISION) throw SINGULAR_MATRIX_EXCEPTION();
 
 		const int size = row_cnt;
-		const CMtxRef to_reverse(*this);
-		CMtxRef result(size, 1.0f);
+		const CMtx to_reverse(*this);
+		CMtx result(size, 1.0f);
 
 		for (int index = 0; index < size; index++)
 		{
-			const FPTYPE divider = to_reverse[index][index];
+			const float divider = to_reverse[index][index];
 			for (int col = 0; col < size; col++)
 			{
 				to_reverse[index][col] /= divider;
@@ -317,7 +308,7 @@ namespace RefAlgebra
 			{
 				if (row != index)
 				{
-					const FPTYPE multiplier = to_reverse[row][index];
+					const float multiplier = to_reverse[row][index];
 					for (int col = 0; col < size; col++)
 					{
 						to_reverse[row][col] -= to_reverse[index][col] * multiplier;
@@ -329,22 +320,24 @@ namespace RefAlgebra
 		return result;
 	}
 
-	bool CMtxRef::operator==(const CMtxRef& rhs) const
+	bool CMtx::operator==(const CMtx& rhs) const
 	{
 		if (row_cnt != rhs.row_cnt || col_cnt != rhs.col_cnt)
 			return false;
 		for (int i = 0; i < row_cnt; i++)
 			for (int j = 0; j < col_cnt; j++)
-				if (-ALG_PRECISION < (row_ptr[i][j] - rhs.row_ptr[i][j]) < ALG_PRECISION)
+			{
+				if ( abs(row_ptr[i][j] - rhs.row_ptr[i][j]) > ALG_PRECISION)
 					return false;
+			}
 		return true;
 	}
 
-	void CMtxRef::display() const
+	void CMtx::display() const
 	{
 	}
 
-	const CMtxRef& CMtxRef::operator=(const CMtxRef& rhs)
+	const CMtx& CMtx::operator=(const CMtx& rhs)
 	{
 		if (&rhs != this)
 		{

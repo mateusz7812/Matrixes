@@ -3,8 +3,6 @@
 #include <iostream>
 
 
-#include "MyAlgebra/CMtx.h"
-#include "RefAlgebra/CMtxRef.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -22,7 +20,7 @@
 #include <time.h>
 #include<math.h>
 
-#include "RefAlgebra/CVctRef.h"
+#include "CMtx2.h"
 
 
 double mygettime(void) {
@@ -74,9 +72,9 @@ double test()
 
 void _tmain()
 {
-	double t_prog = test<MyAlgebra::CMtx>();
+	double t_prog = test<MyAlgebra2::CMtx2>();
 
-	double t_ref = test<RefAlgebra::CMtxRef>();
+	double t_ref = test<MyAlgebra2::CMtx2>();
 
 	printf("Czas wykonania referencyjny: %7.2lfs\n", t_ref);
 	printf("Czas wykonania testowany:    %7.2lfs\n", t_prog);
@@ -86,6 +84,6 @@ void _tmain()
 
 int main()
 {
-	std::cout << RefAlgebra::CMtxRef::ALG_PRECISION;
+	std::cout << MyAlgebra2::CMtx2::ALG_PRECISION;
     //_tmain();
 }

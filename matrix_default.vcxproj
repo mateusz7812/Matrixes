@@ -139,18 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="MyAlgebra\CMtx.cpp" />
     <ClCompile Include="matrix_default.cpp" />
-    <ClCompile Include="MyAlgebra\CVct.cpp" />
-    <ClCompile Include="RefAlgebra\CMtxRef.cpp" />
-    <ClCompile Include="RefAlgebra\CVctRef.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CAlgError.h" />
-    <ClInclude Include="MyAlgebra\CMtx.h" />
-    <ClInclude Include="MyAlgebra\CVct.h" />
-    <ClInclude Include="RefAlgebra\CMtxRef.h" />
-    <ClInclude Include="RefAlgebra\CVctRef.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
