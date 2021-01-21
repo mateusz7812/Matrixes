@@ -1,8 +1,13 @@
 ﻿#pragma once
+#include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
 
-#include "Optional.h"
+#include "COptional.h"
+#include "../Matrixes/consts.h"
+
+using namespace MyOptional;
 
 namespace UnitTestMatrixes
 {
@@ -17,7 +22,7 @@ namespace MyAlgebra
 	public:
 		static const T ALG_PRECISION;
 
-		CMtx<T>(int row_cnt, int col_cnt, bool rand_init = false);
+		CMtx<T>(int row_cnt, int col_cnt, bool rand_init);
 		CMtx<T>(int row_cnt, T diagonal);
 		CMtx<T>(const CMtx<T>& rhs);
 		CMtx<T>(CMtx<T>&& rhs);
@@ -29,74 +34,43 @@ namespace MyAlgebra
 
 		T* operator()(int row_ind, int col_ind);
 
-		Optional<CMtx<T>> operator*(const CMtx<T>& rhs) const;
+		COptional<CMtx<T>> operator*(const CMtx<T>& rhs) const;
 		CMtx<T> operator*(T multiplier) const;
 
-		CMtx<T> operator+(const CMtx<T>& rhs) const;
-		CMtx<T> operator-(const CMtx<T>& rhs) const;
+		COptional<CMtx<T>> operator+(const CMtx<T>& rhs) const;
+		COptional<CMtx<T>> operator-(const CMtx<T>& rhs) const;
 
 		CMtx<T> operator-() const;
 		CMtx<T> operator~() const;
 
-		Optional<CMtx<T>> operator^(int power);
+		COptional<CMtx<T>> operator^(int power);
 
 		bool operator==(const CMtx<T>& rhs) const;
 
-		Optional<T> dot_product(const CMtx<T>& rhs) const;
+		COptional<T> dot_product(const CMtx<T>& rhs) const;
 
 		void display() const;
 
 		std::string to_string() const;
 
+		COptional<CMtx<T>> get_row(int row_index);
+		COptional<CMtx<T>> get_column(int col_index);
+
 		void multiple_row_by(int row, T multiplier);
-		void substract_rows_times(int substracted, int substracting, T times);
+		void subtract_rows_times(int minuend, int subtrahend, T times);
 
-		friend CMtx<T> operator*(T multiplier, const CMtx<T>& rhs)
-		{
-			CMtx<T> result(rhs._row_cnt, rhs._col_cnt);
-			for (int i = 0; i < rhs._row_cnt; i++)
-				for (int j = 0; j < rhs._col_cnt; j++)
-					*result(i, j) = multiplier * rhs._row_ptr[i][j];
-			return std::move(result);
-		}
+		template <typename E>
+		friend CMtx<E> operator*(E multiplier, const CMtx<E>& rhs);
 
-		friend Optional<T> det(const CMtx<T>& rhs)
-		{
-			Optional<T> result_optional;
-			if (rhs._row_cnt != rhs._col_cnt)
-				result_optional.set_code(CODE_BAD_SIZE);
-			else if (rhs._row_cnt == 0)
-			{
-				T* value = new T();
-				*value = static_cast<T>(1);
-				result_optional.set_value(value);
-			}
-			else
-			{
-				CMtx<T>** matrixes = create_sub_matrixes_for_determinant(rhs);
+		template <typename E>
+		friend COptional<E> det(const CMtx<E>& rhs);
 
-				T* result = new T();
-				*result = static_cast<T>(0);
-				int sign = 1;
-				for (int i = 0; i < rhs._row_cnt && result_optional.get_code() == CODE_CORRECT; i++)
-				{
-					Optional<T> det_optional = det(*matrixes[i]);
-					if (det_optional.get_code() == CODE_CORRECT)
-					{
-						*result += static_cast<T>(sign) * rhs._row_ptr[0][i] * *det_optional.get_value();
-						delete det_optional.get_value();
-						sign *= -1;
-					}
-					else
-						result_optional.set_code(det_optional.get_code());
-				}
-				delete matrixes;
-				result_optional.set_value(result);
-			}
-			return result_optional;
-		}
+		template <typename E>
+		friend COptional<CMtx<E>> from_file(std::string file_name);
 
-		Optional<CMtx<T>> reversed();
+		COptional<CMtx<T>> reversed();
+		int get_row_number();
+		int get_col_number();
 
 		friend class UnitTestMatrixes::UnitTestMatrixes;
 
@@ -108,65 +82,179 @@ namespace MyAlgebra
 		CMtx<T>();
 		CMtx<T>(int row_cnt, int col_cnt, T** row_ptr);
 
+		void initialize_dimensions(int row_cnt, int col_cnt);
 		void remove_matrix_ptr();
-
 		void move(CMtx<T>& rhs);
 		void copy(const CMtx<T>& rhs);
 
-		friend CMtx<T>** create_sub_matrixes_for_determinant(const CMtx<T>& rhs)
+		template<typename E>
+		friend CMtx<E>** create_sub_matrixes_for_determinant(const CMtx<E>& rhs);
+		
+	};
+
+	template<typename E>
+	CMtx<E>** create_sub_matrixes_for_determinant(const CMtx<E>& rhs)
+	{
+		const int size = rhs._row_cnt;
+		CMtx<E>** matrixes = new CMtx<E>*[size];
+
+		for (int i = 0; i < size; i++)
+			matrixes[i] = new CMtx<E>(size - 1, size - 1, false);
+
+		for (int i = 0; i < size - 1; i++)
 		{
-			const int size = rhs._row_cnt;
-			CMtx<T>** matrixes = new CMtx<T>*[size];
-
-			for (int i = 0; i < size; i++)
-				matrixes[i] = new CMtx<T>(size - 1, size - 1, false);
-
-			for (int i = 0; i < size - 1; i++)
+			for (int j = 0; j < size; j++)
 			{
-				for (int j = 0; j < size; j++)
+				for (int k = 0; k < size; k++)
 				{
-					for (int k = 0; k < size; k++)
+					if (j < k)
 					{
-						if (j < k)
-						{
-							*(*matrixes[k])(i, j) = rhs._row_ptr[i + 1][j];
-						}
-						else if (j > k)
-						{
-							*(*matrixes[k])(i, j - 1) = rhs._row_ptr[i + 1][j];
-						}
+						*(*matrixes[k])(i, j) = rhs._row_ptr[i + 1][j];
+					}
+					else if (j > k)
+					{
+						*(*matrixes[k])(i, j - 1) = rhs._row_ptr[i + 1][j];
 					}
 				}
 			}
-			return matrixes;
 		}
-	};
+		return matrixes;
+	}
 
 	template <typename T>
-	const T CMtx<T>::ALG_PRECISION = static_cast<T>(0.000001);
+	const T CMtx<T>::ALG_PRECISION = static_cast<T>(PRECISION);
+
+	template <typename E>
+	CMtx<E> operator*(E multiplier, const CMtx<E>& rhs)
+	{
+		CMtx<E> result(rhs._row_cnt, rhs._col_cnt);
+		for (int i = 0; i < rhs._row_cnt; i++)
+			for (int j = 0; j < rhs._col_cnt; j++)
+				*result(i, j) = multiplier * rhs._row_ptr[i][j];
+		return std::move(result);
+	}
+
+	template <typename E>
+	COptional<E> det(const CMtx<E>& rhs)
+	{
+		COptional<E> result_optional;
+		if (rhs._row_cnt != rhs._col_cnt)
+			result_optional.set_code(CODE_BAD_SIZE);
+		else if (rhs._row_cnt == 0)
+		{
+			E* value = new E();
+			*value = static_cast<E>(1);
+			result_optional.set_value(value);
+		}
+		else
+		{
+			CMtx<E>** matrixes = create_sub_matrixes_for_determinant(rhs);
+
+			E* result = new E();
+			*result = static_cast<E>(0);
+			int sign = 1;
+			for (int i = 0; i < rhs._row_cnt && result_optional.is_correct(); i++)
+			{
+				COptional<E> det_optional = det(*matrixes[i]);
+				if (det_optional.is_correct())
+				{
+					*result += static_cast<E>(sign) * rhs._row_ptr[0][i] * *det_optional.get_value();
+					delete det_optional.get_value();
+					sign *= -1;
+				}
+				else
+					result_optional.set_code(det_optional.get_code());
+			}
+			delete matrixes;
+			result_optional.set_value(result);
+		}
+		return result_optional;
+	}
+
+	template <typename E>
+	COptional<CMtx<E>> from_file(std::string file_name)
+	{
+		COptional<CMtx<E>> result_optional;
+		std::ifstream file;
+		try
+		{
+			file.open(PATH + file_name);
+		}
+		catch (std::ios_base::failure& e)
+		{
+			std::cout << e.what();
+		}
+		if (file.is_open())
+		{
+			int row_cnt = 0;
+			int col_cnt = 0;
+			std::vector<std::vector<E>*> matrix_vector;
+			std::string str;
+			while (getline(file, str))
+			{
+				std::stringstream line;
+				line << str;
+				matrix_vector.push_back(new std::vector<E>());
+				E value;
+				while (line >> value)
+				{
+					matrix_vector.at(row_cnt)->push_back(value);
+				}
+				row_cnt++;
+			}
+			file.close();
+			if (!matrix_vector.empty())
+				col_cnt = matrix_vector.at(0)->size();
+			E** row_ptr = new E*[row_cnt];
+			for (int i = 0; i < row_cnt; i++)
+			{
+				row_ptr[i] = new E[col_cnt];
+				for (int j = 0; j < col_cnt; j++)
+					row_ptr[i][j] = matrix_vector.at(i)->at(j);
+			}
+			result_optional.set_value(new CMtx<E>(row_cnt, col_cnt, row_ptr));
+		}
+		else
+		{
+			result_optional.set_code(CODE_FILE_NOT_FOUND);
+		}
+		return result_optional;
+	}
+
+	template <typename T>
+	void CMtx<T>::initialize_dimensions(int row_cnt, int col_cnt)
+	{
+		if (row_cnt < 0)
+			_row_cnt = 0;
+		else
+			this->_row_cnt = row_cnt;
+		if (col_cnt < 0)
+			_col_cnt = 0;
+		else
+			this->_col_cnt = col_cnt;
+	}
 
 	template <typename T>
 	CMtx<T>::CMtx(int row_cnt, int col_cnt, bool rand_init) : CMtx<T>()
 	{
-		this->_row_cnt = row_cnt;
-		this->_col_cnt = col_cnt;
-		_row_ptr = new T*[row_cnt];
+		initialize_dimensions(row_cnt, col_cnt);
+		_row_ptr = new T*[_row_cnt];
 		if (rand_init)
 		{
-			for (int i = 0; i < row_cnt; i++)
+			for (int i = 0; i < _row_cnt; i++)
 			{
-				_row_ptr[i] = new T[col_cnt];
-				for (int j = 0; j < col_cnt; j++)
+				_row_ptr[i] = new T[_col_cnt];
+				for (int j = 0; j < _col_cnt; j++)
 				{
-					_row_ptr[i][j] = static_cast<T>(rand()) / static_cast<T>(RAND_MAX);
+					_row_ptr[i][j] = static_cast<T>(rand()) / static_cast<T>(RAND_MAX / MAX_RANDOM_VALUE);
 				}
 			}
 		}
 		else
 		{
-			for (int i = 0; i < row_cnt; i++)
+			for (int i = 0; i < _row_cnt; i++)
 			{
-				_row_ptr[i] = new T[col_cnt];
+				_row_ptr[i] = new T[_col_cnt];
 			}
 		}
 	}
@@ -174,10 +262,9 @@ namespace MyAlgebra
 	template <typename T>
 	CMtx<T>::CMtx(int row_cnt, T diagonal) : CMtx<T>()
 	{
-		this->_row_cnt = row_cnt;
-		this->_col_cnt = row_cnt;
-		_row_ptr = new T*[row_cnt];
-		for (int i = 0; i < row_cnt; i++)
+		initialize_dimensions(row_cnt, row_cnt);
+		_row_ptr = new T*[_row_cnt];
+		for (int i = 0; i < _row_cnt; i++)
 		{
 			_row_ptr[i] = new T[_col_cnt];
 			for (int j = 0; j < _col_cnt; j++)
@@ -259,24 +346,29 @@ namespace MyAlgebra
 	}
 
 	template <typename T>
-	Optional<CMtx<T>> CMtx<T>::operator*(const CMtx<T>& rhs) const
+	COptional<CMtx<T>> CMtx<T>::operator*(const CMtx<T>& rhs) const
 	{
+		COptional<CMtx<T>> optional_result;
 		if (rhs._row_cnt != _col_cnt)
-			return *new Optional<CMtx>(CODE_BAD_SIZE);
-		CMtx<T>* res = new CMtx<T>(_row_cnt, rhs._col_cnt, false);
-		const CMtx<T> rhsTransposed(~rhs);
-		for (int i = 0; i < _row_cnt; i++)
+			optional_result.set_code(CODE_BAD_SIZE);
+		else
 		{
-			for (int j = 0; j < rhs._col_cnt; j++)
+			CMtx<T>* res = new CMtx<T>(_row_cnt, rhs._col_cnt, false);
+			const CMtx<T> rhsTransposed(~rhs);
+			for (int i = 0; i < _row_cnt; i++)
 			{
-				*(*res)(i, j) = static_cast<T>(0);
-				for (int k = 0; k < _col_cnt; k++)
+				for (int j = 0; j < rhs._col_cnt; j++)
 				{
-					*(*res)(i, j) += _row_ptr[i][k] * rhsTransposed._row_ptr[j][k];
+					*(*res)(i, j) = static_cast<T>(0);
+					for (int k = 0; k < _col_cnt; k++)
+					{
+						*(*res)(i, j) += _row_ptr[i][k] * rhsTransposed._row_ptr[j][k];
+					}
 				}
 			}
+			optional_result.set_value(res);
 		}
-		return *new Optional<CMtx<T>>(res);
+		return optional_result;
 	}
 
 	template <typename T>
@@ -286,33 +378,47 @@ namespace MyAlgebra
 	}
 
 	template <typename T>
-	CMtx<T> CMtx<T>::operator+(const CMtx<T>& rhs) const
+	COptional<CMtx<T>> CMtx<T>::operator+(const CMtx<T>& rhs) const
 	{
-		CMtx<T> result(_row_cnt, _col_cnt);
-		for (int i = 0; i < _row_cnt; i++)
+		COptional<CMtx<T>> optional;
+		if (_row_cnt != rhs._row_cnt || _col_cnt != rhs._col_cnt)
+			optional.set_code(CODE_BAD_SIZE);
+		else
 		{
-			for (int j = 0; j < _col_cnt; j++)
+			CMtx<T>* result = new CMtx<T>(_row_cnt, _col_cnt, false);
+			for (int i = 0; i < _row_cnt; i++)
 			{
-				*result(i, j) = _row_ptr[i][j] + rhs._row_ptr[i][j];
+				for (int j = 0; j < _col_cnt; j++)
+				{
+					*(*result)(i, j) = _row_ptr[i][j] + rhs._row_ptr[i][j];
+				}
 			}
+			optional.set_value(result);
 		}
-		return std::move(result);
+		return optional;
 	}
 
 	template <typename T>
-	CMtx<T> CMtx<T>::operator-(const CMtx<T>& rhs) const
+	COptional<CMtx<T>> CMtx<T>::operator-(const CMtx<T>& rhs) const
 	{
-		CMtx<T> result(_row_cnt, _col_cnt);
-		for (int i = 0; i < _row_cnt; i++)
+		COptional<CMtx<T>> optional;
+		if (_row_cnt != rhs._row_cnt || _col_cnt != rhs._col_cnt)
+			optional.set_code(CODE_BAD_SIZE);
+		else
 		{
-			T* row = _row_ptr[i];
-			T* rhs_row = rhs._row_ptr[i];
-			for (int j = 0; j < _col_cnt; j++)
+			CMtx<T>* result = new CMtx<T>(_row_cnt, _col_cnt, false);
+			for (int i = 0; i < _row_cnt; i++)
 			{
-				*result(i, j) = row[j] - rhs_row[j];
+				T* row = _row_ptr[i];
+				T* rhs_row = rhs._row_ptr[i];
+				for (int j = 0; j < _col_cnt; j++)
+				{
+					*(*result)(i, j) = row[j] - rhs_row[j];
+				}
 			}
+			optional.set_value(result);
 		}
-		return std::move(result);
+		return optional;
 	}
 
 	template <typename T>
@@ -338,9 +444,9 @@ namespace MyAlgebra
 	}
 
 	template <typename T>
-	Optional<CMtx<T>> CMtx<T>::operator^(int power)
+	COptional<CMtx<T>> CMtx<T>::operator^(int power)
 	{
-		Optional<CMtx<T>> result_optional;
+		COptional<CMtx<T>> result_optional;
 		if (power < -1)
 			result_optional.set_code(CODE_BAD_VALUE);
 		else if (power == -1)
@@ -353,12 +459,13 @@ namespace MyAlgebra
 		else
 		{
 			CMtx<T>* result = new CMtx<T>(*this);
-			for (int i = 1; i < power && result_optional.get_code() == CODE_CORRECT; i++)
+			for (int i = 1; i < power && result_optional.is_correct(); i++)
 			{
-				Optional<CMtx<T>> multiplication_optional = *result * *this;
-				if (multiplication_optional.get_code() != CODE_CORRECT)
+				COptional<CMtx<T>> multiplication_optional = *result * *this;
+				if (!multiplication_optional.is_correct())
 					result_optional.set_code(multiplication_optional.get_code());
 				*result = *multiplication_optional.get_value();
+				delete multiplication_optional.get_value();
 			}
 			result_optional.set_value(result);
 		}
@@ -380,11 +487,13 @@ namespace MyAlgebra
 	}
 
 	template <typename T>
-	Optional<T> CMtx<T>::dot_product(const CMtx<T>& rhs) const
+	COptional<T> CMtx<T>::dot_product(const CMtx<T>& rhs) const
 	{
-		Optional<T> result_optional;
-		if (_col_cnt != 1 && _row_cnt != 1) result_optional.set_code(CODE_BAD_SIZE);
-		else if (_col_cnt != rhs._col_cnt || _row_cnt != rhs._row_cnt) result_optional.set_code(CODE_BAD_SIZE);
+		COptional<T> result_optional;
+		if (_col_cnt != 1 && _row_cnt != 1)
+			result_optional.set_code(CODE_BAD_SIZE);
+		else if (_col_cnt != rhs._col_cnt || _row_cnt != rhs._row_cnt)
+			result_optional.set_code(CODE_BAD_SIZE);
 		else
 		{
 			T* result = new T();
@@ -414,6 +523,42 @@ namespace MyAlgebra
 	}
 
 	template <typename T>
+	COptional<CMtx<T>> CMtx<T>::get_row(int row_index)
+	{
+		COptional<CMtx<T>> optional_result;
+		if (0 <= row_index && row_index < _row_cnt)
+		{
+			CMtx<T>* result = new CMtx<T>(1, _col_cnt, false);
+			for (int i = 0; i < _col_cnt; i++)
+				*(*result)(0, i) = _row_ptr[row_index][i];
+			optional_result.set_value(result);
+		}
+		else
+		{
+			optional_result.set_code(CODE_BAD_SIZE);
+		}
+		return optional_result;
+	}
+
+	template <typename T>
+	COptional<CMtx<T>> CMtx<T>::get_column(int col_index)
+	{
+		COptional<CMtx<T>> optional_result;
+		if (0 <= col_index && col_index < _col_cnt)
+		{
+			CMtx<T>* result = new CMtx<T>(_row_cnt, 1, false);
+			for (int i = 0; i < _row_cnt; i++)
+				*(*result)(i, 0) = _row_ptr[i][col_index];
+			optional_result.set_value(result);
+		}
+		else
+		{
+			optional_result.set_code(CODE_BAD_SIZE);
+		}
+		return optional_result;
+	}
+
+	template <typename T>
 	void CMtx<T>::multiple_row_by(int row, T multiplier)
 	{
 		for (int col = 0; col < _col_cnt; col++)
@@ -423,11 +568,11 @@ namespace MyAlgebra
 	}
 
 	template <typename T>
-	void CMtx<T>::substract_rows_times(int substracted, int substracting, T times)
+	void CMtx<T>::subtract_rows_times(int minuend, int subtrahend, T times)
 	{
 		for (int col = 0; col < _col_cnt; col++)
 		{
-			_row_ptr[substracted][col] -= _row_ptr[substracting][col] * times;
+			_row_ptr[minuend][col] -= _row_ptr[subtrahend][col] * times;
 		}
 	}
 
@@ -484,13 +629,13 @@ namespace MyAlgebra
 	}
 
 	template <typename T>
-	Optional<CMtx<T>> CMtx<T>::reversed()
+	COptional<CMtx<T>> CMtx<T>::reversed()
 	{
-		Optional<CMtx<T>> result_optional;
-		Optional<T> det_optional = det(*this);
+		COptional<CMtx<T>> result_optional;
+		COptional<T> det_optional = det(*this);
 		if (_row_cnt != _col_cnt)
 			result_optional.set_code(CODE_BAD_SIZE);
-		else if (det_optional.get_code() != CODE_CORRECT)
+		else if (!det_optional.is_correct())
 			result_optional.set_code(det_optional.get_code());
 		else if (abs(*det_optional.get_value()) < ALG_PRECISION)
 			result_optional.set_code(CODE_SINGULAR_MATRIX);
@@ -509,13 +654,27 @@ namespace MyAlgebra
 					if (row != index)
 					{
 						T times = *to_reverse(row, index);
-						to_reverse.substract_rows_times(row, index, times);
-						result->substract_rows_times(row, index, times);
+						to_reverse.subtract_rows_times(row, index, times);
+						result->subtract_rows_times(row, index, times);
 					}
 				}
 			}
 			result_optional.set_value(result);
 		}
+		if (det_optional.is_correct())
+			delete det_optional.get_value();
 		return result_optional;
+	}
+
+	template <typename T>
+	int CMtx<T>::get_row_number()
+	{
+		return _row_cnt;
+	}
+
+	template <typename T>
+	int CMtx<T>::get_col_number()
+	{
+		return _col_cnt;
 	}
 }
